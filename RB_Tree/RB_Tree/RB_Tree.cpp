@@ -1,7 +1,14 @@
+// 삽입 동작:              ○
+// 삭제 동작:              ○ 
+// check_tree() 통과:      ○
+
+
+
+
+
 #include <iostream>
 #include <random>
 #include <cassert>
-//#include "treePrint.h"
 
 using namespace std;
 
@@ -10,8 +17,8 @@ default_random_engine dre(rd());
 uniform_int_distribution <int> uid(100, 1000);
 
 enum Color {
-	Color_Red,
-	Color_Black
+	Color_Red = 0,
+	Color_Black = 1
 };
 
 struct Node {
@@ -56,12 +63,15 @@ void check_tree(struct Node *root, struct Node *NIL) {
 
 	struct Node *p;
 
-	if (root == NIL) return;
+	if (root == nullptr) {
+		cout << endl;
+		cout << "체크할 트리가 비어있습니다" << endl;
+		return; 
+	}
 
-	//root->color = BLACK;
+	root->color = Color_Black;
 
 	for (p = root; p != NIL; p = p->left)
-
 		cnt += p->color;
 
 	check_tree_recursion(root, NIL, 0, cnt);
@@ -71,21 +81,22 @@ void check_tree(struct Node *root, struct Node *NIL) {
 void Check_PrintAll(struct Node *node, struct Node *NIL)
 {
 	if (node == NIL)
-		cout << "NIL " << endl << endl;
+		//cout << "NIL " << endl << endl;
+		;
 
 	else if (node != NIL) {
 
-		cout << "왼쪽 진입" << endl;
+		/*cout << "왼쪽 진입" << endl;*/
 		Check_PrintAll(node->left, NIL);
 
-		cout << node->data << " ";
+		//cout << node->data << " ";
 
-		if (node->color == Color_Red)
+		/*if (node->color == Color_Red)
 			cout << "RED" << endl << endl;
 		else
-			cout << "Black" << endl << endl;
+			cout << "Black" << endl << endl;*/
 
-		cout << "오른쪽 진입" << endl;
+		//cout << "오른쪽 진입" << endl;
 		Check_PrintAll(node->right, NIL);
 	}
 
@@ -286,7 +297,13 @@ void RB_Delete_Red(struct Node *node, struct Node *NIL, bool &red_check)	// 삭제
 
 void RB_Delete_Black(struct Node *node, struct Node *Parent, struct Node *&root)	// 삭제된 후 삭제된 노드의 자식노드, 그 부모노드  2-1, 2-4, 1-1, *-3, *-2 순서로 처리
 {
-	if (node == Parent->left) {		// x 가 p의 왼쪽
+	if (node == root) {		// 재귀 시 노드가 루트면
+		if (node->color == Color_Red){			// 루트의 색이 빨간색이면
+			node->color = Color_Black;
+		}
+	}
+
+	else if (node == Parent->left) {		// x 가 p의 왼쪽
 
 		struct Node *x = node;
 		struct Node *s = Parent->right;
@@ -407,7 +424,13 @@ void DeleteNode(struct Node *node, struct Node *NIL, struct Node *&root)
 	bool red_check = false;
 
 	if (node->left == NIL && node->right == NIL) {		// 자식노드 X
-		if (node->parent->left == node) {		// 지우려는 노드가 부모노드의 왼쪽
+
+		if (node == root) {					// 노드가 루트
+			root = nullptr;
+			delete node;
+		}
+
+		else if (node->parent->left == node) {		// 지우려는 노드가 부모노드의 왼쪽
 			RB_Delete_Red(node, NIL, red_check);
 			node->parent->left = NIL;
 			if(node->color == Color_Black && !red_check)
@@ -425,7 +448,7 @@ void DeleteNode(struct Node *node, struct Node *NIL, struct Node *&root)
 	}
 
 	else if (node->left != NIL && node->right != NIL) {		// 자식노드 2개
-
+		
 		struct Node *temp = node->right;		// 예비 노드
 
 		while (temp->left != NIL) {			// temp 는 노드의 왼쪽 끝으로 찾아감
@@ -473,7 +496,22 @@ void DeleteNode(struct Node *node, struct Node *NIL, struct Node *&root)
 	}
 
 	else if (node->left != NIL || node->right != NIL) {
-		if (node->parent->left == node) {		// 지우려는 노드가 부모노드의 왼쪽
+
+		if (node == root) {		// 지우려는 노드가 루트
+			
+			if (node->left != NIL) {		// 노드의 왼쪽이 있다면
+				node->left->parent = nullptr;
+				root = node->left;
+			}
+
+			else {					// 노드의 오른쪽이 있다면
+				node->right->parent = nullptr;
+				root = node->right;
+			}
+			delete node;
+		}
+
+		else if (node->parent->left == node) {		// 지우려는 노드가 부모노드의 왼쪽
 
 			if (node->left != NIL) {			// 지우려는 노드의 왼쪽 노드가 있음
 				RB_Delete_Red(node, NIL, red_check);
@@ -519,15 +557,17 @@ void DeleteNode(struct Node *node, struct Node *NIL, struct Node *&root)
 	}
 }
 
-void Delete(struct Node *node, struct Node *NIL, struct Node *&root, int key)
+bool Delete(struct Node *node, struct Node *NIL, struct Node *&root, int key)
 {
 	if (node == NIL) {
 		cout << "지우려는 값이 없습니다" << endl;
+		return false;
 	}
 
 	else {
 		if (node->data == key) {
 			DeleteNode(node, NIL, root);
+			return true;
 		}
 
 		else if (node->data > key) {				// 해당 노드의 값이 찾는 값보다 큼
@@ -592,6 +632,8 @@ int main()
 			loop = 0;
 	}
 
+	int *arr = new int[n + 10];		// 배열 생성
+
 	struct Node *root = nullptr;
 
 	for (int i = 0; i < n; i++) {
@@ -603,15 +645,28 @@ int main()
 		node->color = Color_Red;
 		node->data = uid(dre);				// 노드의 초기화
 
-		cout << node->data << "생성" << endl;
+		//cout << node->data << "생성" << endl;
+
+		arr[i] = node->data;		// 배열에 생성된 값 저장
+		cout << arr[i] << " 생성 ";		// 생성된 값 출력
 
 		Insert(root, node, NIL, root);		// 루트부터 순회해서 새로운 노드와 비교, NIL이 마지막 노드, root는 항상 트리의 머리를 가리킴
+		
+		if (i >= 0) {
+			check_tree(root, NIL);
+			cout << "트리 조건 만족" << endl;
+		}
 
-		cout << "루트의 값은 : " << root->data << endl << endl;
+		//cout << "루트의 값은 : " << root->data << endl << endl;
 	}
 
+	for (int i = 0; i < n; ++i) {
+		cout << arr[i] << " ";
+	}
 
-	cout << "중위 순회: " << endl;
+	cout << endl;
+
+	//cout << "중위 순회: " << endl;
 	Check_PrintAll(root, NIL);
 	cout << endl;
 
@@ -624,7 +679,7 @@ int main()
 	loop = 1;
 	while (loop) {
 
-		cout << "명령어를 입력하시오: (P : 출력  S : 검색  D : 삭제  I : 삽입  C : 트리 체크  Q : 종료)";
+		cout << "명령어를 입력하시오: (P : 출력  S : 검색  D : 삭제  I : 삽입  C : 트리 체크  Q : 종료(트리 전부 삭제))";
 		cin >> command;
 
 		switch (command) {
@@ -655,15 +710,35 @@ int main()
 
 			cout << "찾을 데이터를 입력하시오: ";
 			cin >> search_data;
-			Delete(root, NIL, root, search_data);
+
+			if (Delete(root, NIL, root, search_data)) {		// 데이터를 삭제했으면 true
+				for (int i = 0; i < n; ++i) {
+					if (arr[i] == search_data) {		// 삭제할 데이터가 i번째에 있으면
+						arr[i] = arr[n - 1];			// 맨뒤의 데이터를 i번째에 두고
+						n = n - 1;						// n 감소
+						break;
+					}
+				}
+			}
 
 			check_tree(root, NIL);
 			cout << "트리 조건 만족" << endl;
+
+
 			break;
 
 		case 'Q':
 			loop = 0;
-			DeleteAll(root, NIL);
+
+			for (int i = 0; i < n; ++i) {
+				Delete(root, NIL, root, arr[i]);
+
+				check_tree(root, NIL);
+				cout << i + 1 << " 번째 삭제 : 트리조건 만족 " << endl;
+
+			}
+
+			delete[] arr;
 
 			break;
 
@@ -684,6 +759,10 @@ int main()
 			node->color = Color_Red;
 
 			Insert(root, node, NIL, root);
+
+			arr[n] = input_data;
+			n = n + 1;
+
 			break;
 
 
